@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <title>IMDb Project - Phase 1</title>
+  <style>
+body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  padding: 2rem;
+  background: #f7f7fa; /* Light background */
+  color: #333;
+  line-height: 1.5;
+}
+
+h1 {
+  font-family: 'Calibri', sans-serif; 
+  font-weight: 700;
+  color: #000000; 
+  font-size: 3rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.15);
+  margin-bottom: 1rem;
+  text-align: center; /* Center the main title */
+}
+
+/* ----- Controls (Genre + Button) ----- */
+.controls {
+  margin-bottom: 1.5rem;
+  text-align: center; /* Center the controls */
+}
+.controls label {
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+.controls select, 
+.controls button {
+  margin-right: 1rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.controls button {
+  border: none;
+  background-color: #ffca28;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.controls button:hover {
+  background-color: #ffc107;
+}
+
+/* ----- Container for the three sections: Rating, Votes, Favorites ----- */
+.lists-container {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.list-section {
+  flex: 1;  /* Ensures all sections take equal space */
+  max-width: 400px; /* Adjust to your preference */
+  min-width: 300px; /* Ensures no section is too skinny */
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+
+.list-section h3 {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+
+/* ----- Movie Items ----- */
+.movie-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* Center content inside */
+  text-align: center;  /* Center text */
+  background: #fafafa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  width: 90%;  /* Ensures uniform width */
+  margin: 0 auto;  /* Centers the entire block */
+}
+.movie-item strong {
+  font-size: 1.05rem;
+  color: #333;
+}
+.movie-item img {
+  display: block;
+  width: 150px;  /* Adjust to preferred width */
+  height: auto;  /* Maintain aspect ratio */
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+/* ----- "Add to Favorites" button within each item ----- */
+.movie-item button {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #333;
+  background-color: #ffd54f;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.movie-item button:hover {
+  background-color: #ffca28;
+  transform: scale(1.03);
+}
+
+/* ----- Error message styling ----- */
+.error-message {
+  color: #d32f2f;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+  </style>
+</head>
+<body>
+
+  <h1>IMDb Top 10</h1>
+
+  <div class="controls">
+    <label for="genreSelect">Genre:</label>
+    <select id="genreSelect">
+      <option value="Action">Action</option>
+      <option value="Comedy">Comedy</option>
+      <option value="Drama">Drama</option>
+    </select>
+    <button id="loadBtn">Load</button>
+  </div>
+
+  <!-- Container for the three sections: Rating, Votes, Favorites -->
+  <div class="lists-container">
+    <!-- Top 10 by Rating -->
+    <div class="list-section">
+      <h3>Top 10 by Rating</h3>
+      <div id="ratingList"></div>
+    </div>
+
+    <!-- Top 10 by Votes -->
+    <div class="list-section">
+      <h3>Top 10 by Votes</h3>
+      <div id="votesList"></div>
+    </div>
+
+    <!-- Favorites Section -->
+    <div class="list-section">
+      <h3>Favorites</h3>
+      <div id="favoritesList"></div>
+    </div>
+  </div>
+
+  <script>
+    // DOM elements
+    const genreSelect = document.getElementById("genreSelect");
+    const loadBtn = document.getElementById("loadBtn");
+    const ratingList = document.getElementById("ratingList");
+    const votesList = document.getElementById("votesList");
+    const favoritesList = document.getElementById("favoritesList");
+
+    // Flask server endpoint
+    const API_BASE_URL = "http://127.0.0.1:5000/api/movies";
+
+    // Your OMDb API Key
+    const OMDB_API_KEY = "a0e4bbad";
+
+    // Global array to store favorite movies (in-memory, not persisted)
+    let favorites = [];
+
+    // ------------------------------------------------------------
+    // Helper: Renders the favorites in #favoritesList
+    // ------------------------------------------------------------
+    function renderFavorites() {
+      favoritesList.innerHTML = "";
+
+      if (favorites.length === 0) {
+        favoritesList.innerHTML = "<p>No favorites yet</p>";
+        return;
+      }
+
+      favorites.forEach(movie => {
+        const favItem = document.createElement("div");
+        favItem.className = "movie-item";
+
+        // Show rating or votes, if available
+        let extraField = "";
+        if (typeof movie.rating !== "undefined") {
+          extraField = `Rating: ${movie.rating}/10`;
+        } else if (typeof movie.votes !== "undefined") {
+          extraField = `Votes: ${movie.votes}`;
+        }
+
+        // Basic movie info
+        favItem.innerHTML = `
+          <strong>${movie.name}</strong><br>
+          IMDb ID: ${movie.id}<br>
+          ${extraField}
+        `;
+
+        // Display the poster if we have it
+        if (movie.posterUrl) {
+          const posterImg = document.createElement("img");
+          posterImg.src = movie.posterUrl;
+          posterImg.alt = `Poster for ${movie.name}`;
+          favItem.appendChild(posterImg);
+        }
+
+        favoritesList.appendChild(favItem);
+      });
+    }
+
+    // ------------------------------------------------------------
+    // Helper: Fetch poster from OMDb for a given IMDb ID
+    // ------------------------------------------------------------
+    function fetchPoster(imdbId) {
+      return fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_API_KEY}`)
+        .then(response => response.json())
+        .then(omdbData => {
+          // If OMDb doesn’t have the movie, or Poster is "N/A", return null
+          if (omdbData.Response === "False" || omdbData.Poster === "N/A") {
+            return null;
+          }
+          return omdbData.Poster; // return the Poster URL
+        })
+        .catch(err => {
+          console.error("Poster fetch error:", err);
+          return null;
+        });
+    }
+
+    // ------------------------------------------------------------
+    // Load Button Handler
+    // ------------------------------------------------------------
+    loadBtn.addEventListener("click", () => {
+      const selectedGenre = genreSelect.value;
+
+      // Clear the current lists
+      ratingList.innerHTML = "<p>Loading...</p>";
+      votesList.innerHTML = "<p>Loading...</p>";
+
+      // --- FETCH Top 10 by Rating ---
+      fetch(`${API_BASE_URL}?genre=${selectedGenre}&sortBy=rating`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error ${response.status}: Unable to fetch rating data`);
+          }
+          return response.json();
+        })
+        .then(async (data) => {
+          ratingList.innerHTML = "";
+
+          if (data.length === 0) {
+            ratingList.innerHTML = "<p>No results found</p>";
+            return;
+          }
+
+          // Fetch each poster asynchronously
+          for (const movie of data) {
+            const item = document.createElement("div");
+            item.className = "movie-item";
+
+            // Basic info
+            item.innerHTML = `
+              <strong>${movie.name}</strong><br>
+              IMDb ID: ${movie.id}<br>
+              Rating: ${movie.rating ?? "N/A"}/10
+            `;
+
+            // Fetch the poster URL from OMDb
+            const posterUrl = await fetchPoster(movie.id);
+            if (posterUrl) {
+              // Store in the movie object so we can use it in Favorites
+              movie.posterUrl = posterUrl;
+
+              // Also display it right away
+              const posterImg = document.createElement("img");
+              posterImg.src = posterUrl;
+              posterImg.alt = `Poster for ${movie.name}`;
+              item.appendChild(posterImg);
+            }
+
+            // "Add to Favorites" button
+            const favButton = document.createElement("button");
+            favButton.textContent = "Add to Favorites";
+            favButton.addEventListener("click", () => {
+              // Only add if not already in favorites
+              const alreadyInFavorites = favorites.some(fav => fav.id === movie.id);
+              if (!alreadyInFavorites) {
+                favorites.push(movie);
+                renderFavorites(); // update Favorites UI
+              }
+            });
+            item.appendChild(favButton);
+
+            ratingList.appendChild(item);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching rating data:", err);
+          ratingList.innerHTML = `<p class="error-message">Failed to load data. Try again.</p>`;
+        });
+
+      // --- FETCH Top 10 by Votes ---
+      fetch(`${API_BASE_URL}?genre=${selectedGenre}&sortBy=votes`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error ${response.status}: Unable to fetch votes data`);
+          }
+          return response.json();
+        })
+        .then(async (data) => {
+          votesList.innerHTML = "";
+
+          if (data.length === 0) {
+            votesList.innerHTML = "<p>No results found</p>";
+            return;
+          }
+
+          for (const movie of data) {
+            const item = document.createElement("div");
+            item.className = "movie-item";
+
+            // Basic info
+            item.innerHTML = `
+              <strong>${movie.name}</strong><br>
+              IMDb ID: ${movie.id}<br>
+              Votes: ${movie.votes ?? "N/A"}
+            `;
+
+            // Poster fetch
+            const posterUrl = await fetchPoster(movie.id);
+            if (posterUrl) {
+              movie.posterUrl = posterUrl;
+
+              const posterImg = document.createElement("img");
+              posterImg.src = posterUrl;
+              posterImg.alt = `Poster for ${movie.name}`;
+              item.appendChild(posterImg);
+            }
+
+            // "Add to Favorites" button
+            const favButton = document.createElement("button");
+            favButton.textContent = "Add to Favorites";
+            favButton.addEventListener("click", () => {
+              // Only add if not already in favorites
+              const alreadyInFavorites = favorites.some(fav => fav.id === movie.id);
+              if (!alreadyInFavorites) {
+                favorites.push(movie);
+                renderFavorites();
+              }
+            });
+            item.appendChild(favButton);
+
+            votesList.appendChild(item);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching votes data:", err);
+          votesList.innerHTML = `<p class="error-message">Failed to load data. Try again.</p>`;
+        });
+    });
+  </script>
+</body>
+</html>
