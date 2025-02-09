@@ -221,6 +221,17 @@ h1 {
           posterImg.alt = `Poster for ${movie.name}`;
           favItem.appendChild(posterImg);
         }
+        const removeButton = document.createElement("button");
+        removeButton.textContent = "Remove from Favorites";
+        removeButton.style.backgroundColor = "#ffd54f"; // Red color for remove button
+        removeButton.style.color = "#333";
+        removeButton.addEventListener("click", () => {
+          favorites = favorites.filter((fav) => fav.id !== movie.id);
+      renderFavorites(); // Re-render the favorites list
+    });
+    
+
+    favItem.appendChild(removeButton);
 
         favoritesList.appendChild(favItem);
       });
