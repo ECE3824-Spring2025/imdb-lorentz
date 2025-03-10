@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>IMDb Project - Phase 1</title>
+  <style>
+    /* Container with zoom-out effect */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      transform: scale(0.9);
+      transform-origin: top center;
+    }
+    
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f7f7fa;
+      color: #333;
+      line-height: 1.5;
+    }
+    
+    h1 {
+      font-family: 'Calibri', sans-serif; 
+      font-weight: 700;
+      color: #000;
+      font-size: 2.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    
+    /* Controls */
+    .controls {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .controls label {
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    .controls select,
+    .controls input,
+    .controls button {
+      margin-right: 1rem;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.9rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .controls button {
+      border: none;
+      background-color: #ffca28;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .controls button:hover {
+      background-color: #ffc107;
+    }
+    
+    /* Lists Container */
+    .lists-container {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+    }
+    
+    .list-section {
+      flex: 1;
+      max-width: 400px;
+      min-width: 300px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      position: relative;
+    }
+    
+    /* Fixed header for each column */
+    .section-header {
+      background: #fff;
+      padding: 1rem;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .section-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .section-header .scroll-top-btn {
+      margin-top: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      border: none;
+      background-color: #ffca28;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .section-header .scroll-top-btn:hover {
+      background-color: #ffc107;
+    }
+    
+    /* Scrollable content for each column */
+    .section-content {
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    
+    /* Favorites header additional styles */
+    .favorites-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .favorites-controls button {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      border: none;
+      background-color: #ffca28;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .favorites-controls button:hover {
+      background-color: #ffc107;
+    }
+    
+    /* Movie Items */
+    .movie-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: #fafafa;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    .movie-item strong {
+      font-size: 1rem;
+      color: #333;
+    }
+    .movie-item img {
+      display: block;
+      width: 150px;
+      height: auto;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .movie-item img:hover {
+      transform: scale(1.05);
+    }
+    .movie-item button {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #333;
+      background-color: #ffd54f;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+    .movie-item button:hover {
+      background-color: #ffca28;
+      transform: scale(1.03);
+    }
+    
+    /* Error message */
+    .error-message {
+      color: #d32f2f;
+      font-weight: bold;
+      margin: 1rem 0;
+    }
+    
+    /* Modal for expanded poster */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal img {
+      width: 20%;
+      max-width: 600px;
+      height: auto;
+      border: 5px solid #fff;
+      border-radius: 5px;
+    }
+    
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4caf50;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      opacity: 1;
+      transition: opacity 1s ease-out;
+      z-index: 10000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IMDb Top 10</h1>
+
+    <div class="controls">
+      <label for="genreSelect">Genre:</label>
+      <select id="genreSelect">
+        <option value="Action">Action</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Drama">Drama</option>
+      </select>
+      <label for="minVotesInput">Min Votes:</label>
+      <input type="number" id="minVotesInput" placeholder="e.g. 1000" min="0">
+      <label for="maxVotesInput">Max Votes:</label>
+      <input type="number" id="maxVotesInput" placeholder="e.g. 100000" min="0">
+      <button id="loadBtn">Load</button>
+    </div>
+
+    <div class="lists-container">
+      <!-- Top 10 by Rating Column -->
+      <div class="list-section" id="ratingSection">
+        <div class="section-header">
+          <h3>Top 10 by Rating</h3>
+          <button class="scroll-top-btn">Back to Top</button>
+        </div>
+        <div class="section-content" id="ratingList"></div>
+      </div>
+
+      <!-- Top 10 by Votes Column -->
+      <div class="list-section" id="votesSection">
+        <div class="section-header">
+          <h3>Top 10 by Votes</h3>
+          <button class="scroll-top-btn">Back to Top</button>
+        </div>
+        <div class="section-content" id="votesList"></div>
+      </div>
+
+      <!-- Favorites Column -->
+      <div class="list-section" id="favoritesSection">
+        <div class="section-header">
+          <div class="favorites-controls">
+            <h3>Favorites</h3>
+            <button id="removeAllFavBtn">Remove All Favorites</button>
+          </div>
+          <button class="scroll-top-btn">Back to Top</button>
+        </div>
+        <div class="section-content" id="favoritesList"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal for expanded poster -->
+  <div id="modal" class="modal">
+    <img id="modalImg" src="" alt="Expanded Poster">
+  </div>
+
+  <script>
+    // DOM elements
+    const genreSelect = document.getElementById("genreSelect");
+    const minVotesInput = document.getElementById("minVotesInput");
+    const maxVotesInput = document.getElementById("maxVotesInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const ratingList = document.getElementById("ratingList");
+    const votesList = document.getElementById("votesList");
+    const favoritesList = document.getElementById("favoritesList");
+    const removeAllFavBtn = document.getElementById("removeAllFavBtn");
+    const modal = document.getElementById("modal");
+    const modalImg = document.getElementById("modalImg");
+
+    // Flask server endpoint (ensure port matches your Flask server)
+    const API_BASE_URL = "http://127.0.0.1:8080/api/movies";
+
+    // Your OMDb API Key
+    const OMDB_API_KEY = "a0e4bbad";
+
+    // Global array to store favorite movies
+    let favorites = [];
+
+    // ------------------------------------------------------------
+    // Helper: Shows a toast notification that fades out
+    // ------------------------------------------------------------
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+      }, 1500);
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 2500);
+    }
+
+    // ------------------------------------------------------------
+    // Helper: Renders the favorites in #favoritesList with remove button
+    // and auto-scrolls to newly added favorite.
+    // ------------------------------------------------------------
+    function renderFavorites() {
+      favoritesList.innerHTML = "";
+
+      if (favorites.length === 0) {
+        favoritesList.innerHTML = "<p>No favorites yet</p>";
+        return;
+      }
+
+      favorites.forEach((movie, index) => {
+        const favItem = document.createElement("div");
+        favItem.className = "movie-item";
+
+        let extraField = "";
+        if (typeof movie.rating !== "undefined") {
+          extraField = `Rating: ${movie.rating}/10`;
+        } else if (typeof movie.votes !== "undefined") {
+          extraField = `Votes: ${movie.votes}`;
+        }
+
+        favItem.innerHTML = `
+          <strong>${index + 1}. ${movie.name}</strong><br>
+          IMDb ID: ${movie.id}<br>
+          ${extraField}
+        `;
+
+        if (movie.posterUrl) {
+          const posterImg = document.createElement("img");
+          posterImg.src = movie.posterUrl;
+          posterImg.alt = `Poster for ${movie.name}`;
+          posterImg.addEventListener("click", () => {
+            modalImg.src = posterImg.src;
+            modal.style.display = "flex";
+          });
+          favItem.appendChild(posterImg);
+        }
+
+        const removeButton = document.createElement("button");
+        removeButton.textContent = "Remove from Favorites";
+        removeButton.addEventListener("click", () => {
+          favorites = favorites.filter(fav => fav.id !== movie.id);
+          renderFavorites();
+        });
+        favItem.appendChild(removeButton);
+
+        favoritesList.appendChild(favItem);
+      });
+
+      // After rendering, scroll favorites column to bottom so new favorite is visible
+      document.getElementById("favoritesSection").querySelector(".section-content").scrollTop =
+        document.getElementById("favoritesSection").querySelector(".section-content").scrollHeight;
+    }
+
+    // ------------------------------------------------------------
+    // Event Listener for "Remove All Favorites" Button
+    // ------------------------------------------------------------
+    removeAllFavBtn.addEventListener("click", () => {
+      favorites = [];
+      renderFavorites();
+      showToast("All favorites removed");
+    });
+
+    // ------------------------------------------------------------
+    // Helper: Fetch poster from OMDb for a given IMDb ID
+    // ------------------------------------------------------------
+    function fetchPoster(imdbId) {
+      return fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_API_KEY}`)
+        .then(response => response.json())
+        .then(omdbData => {
+          if (omdbData.Response === "False" || omdbData.Poster === "N/A") {
+            return null;
+          }
+          return omdbData.Poster;
+        })
+        .catch(err => {
+          console.error("Poster fetch error:", err);
+          return null;
+        });
+    }
+
+    // ------------------------------------------------------------
+    // Load Button Handler
+    // ------------------------------------------------------------
+    loadBtn.addEventListener("click", async () => {
+      const selectedGenre = genreSelect.value;
+      const minVotes = minVotesInput.value || 0;
+      const maxVotes = maxVotesInput.value || ""; // Empty string if not provided
+
+      ratingList.innerHTML = "<p>Loading...</p>";
+      votesList.innerHTML = "<p>Loading...</p>";
+
+      // --- FETCH Top 10 by Rating with minVotes and maxVotes filters ---
+      try {
+        const response = await fetch(`${API_BASE_URL}?genre=${selectedGenre}&sortBy=rating&minVotes=${minVotes}&maxVotes=${maxVotes}`);
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: Unable to fetch rating data`);
+        }
+        const data = await response.json();
+        ratingList.innerHTML = "";
+        if (data.length === 0) {
+          ratingList.innerHTML = "<p>No results found</p>";
+        } else {
+          for (let i = 0; i < data.length; i++) {
+            const movie = data[i];
+            const rank = i + 1;
+            const item = document.createElement("div");
+            item.className = "movie-item";
+            item.innerHTML = `
+              <strong>${rank}. ${movie.name}</strong><br>
+              IMDb ID: ${movie.id}<br>
+              Rating: ${movie.rating ?? "N/A"}/10
+            `;
+            const posterUrl = await fetchPoster(movie.id);
+            if (posterUrl) {
+              movie.posterUrl = posterUrl;
+              const posterImg = document.createElement("img");
+              posterImg.src = posterUrl;
+              posterImg.alt = `Poster for ${movie.name}`;
+              // When clicked, open modal for enlarged view
+              posterImg.addEventListener("click", () => {
+                modalImg.src = posterUrl;
+                modal.style.display = "flex";
+              });
+              item.appendChild(posterImg);
+            }
+            const favButton = document.createElement("button");
+            favButton.textContent = "Add to Favorites";
+            favButton.addEventListener("click", () => {
+              const alreadyInFavorites = favorites.some(fav => fav.id === movie.id);
+              if (!alreadyInFavorites) {
+                favorites.push(movie);
+                renderFavorites();
+                showToast(`Added "${movie.name}" to favorites`);
+              } else {
+                showToast(`You've already added "${movie.name}" to favorites`);
+              }
+            });
+            item.appendChild(favButton);
+            ratingList.appendChild(item);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching rating data:", err);
+        ratingList.innerHTML = `<p class="error-message">Failed to load data. Try again.</p>`;
+      }
+
+      // --- FETCH Top 10 by Votes ---
+      try {
+        const response = await fetch(`${API_BASE_URL}?genre=${selectedGenre}&sortBy=votes`);
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: Unable to fetch votes data`);
+        }
+        const data = await response.json();
+        votesList.innerHTML = "";
+        if (data.length === 0) {
+          votesList.innerHTML = "<p>No results found</p>";
+        } else {
+          for (let i = 0; i < data.length; i++) {
+            const movie = data[i];
+            const rank = i + 1;
+            const item = document.createElement("div");
+            item.className = "movie-item";
+            item.innerHTML = `
+              <strong>${rank}. ${movie.name}</strong><br>
+              IMDb ID: ${movie.id}<br>
+              Votes: ${movie.votes ?? "N/A"}
+            `;
+            const posterUrl = await fetchPoster(movie.id);
+            if (posterUrl) {
+              movie.posterUrl = posterUrl;
+              const posterImg = document.createElement("img");
+              posterImg.src = posterUrl;
+              posterImg.alt = `Poster for ${movie.name}`;
+              // When clicked, open modal for enlarged view
+              posterImg.addEventListener("click", () => {
+                modalImg.src = posterUrl;
+                modal.style.display = "flex";
+              });
+              item.appendChild(posterImg);
+            }
+            const favButton = document.createElement("button");
+            favButton.textContent = "Add to Favorites";
+            favButton.addEventListener("click", () => {
+              const alreadyInFavorites = favorites.some(fav => fav.id === movie.id);
+              if (!alreadyInFavorites) {
+                favorites.push(movie);
+                renderFavorites();
+                showToast(`Added "${movie.name}" to favorites`);
+              } else {
+                showToast(`You've already added "${movie.name}" to favorites`);
+              }
+            });
+            item.appendChild(favButton);
+            votesList.appendChild(item);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching votes data:", err);
+        votesList.innerHTML = `<p class="error-message">Failed to load data. Try again.</p>`;
+      }
+    });
+
+    // Modal click to close
+    modal.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
+    // Event listeners for "Back to Top" buttons in each column
+    document.querySelectorAll(".scroll-top-btn").forEach(button => {
+      button.addEventListener("click", function() {
+        const sectionContent = this.parentElement.nextElementSibling;
+        if (sectionContent) {
+          sectionContent.scrollTop = 0;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
