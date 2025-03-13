@@ -1,4 +1,4 @@
-import sqlalchemy
+import sqlalchemy #pip install sqlalchemy
 import sqlalchemy.orm
 
 # Patch SQLAlchemy Session.get_bind to avoid extra argument errors.
@@ -13,13 +13,13 @@ if not hasattr(sqlalchemy.orm, '__all__'):
 if not hasattr(sqlalchemy.orm, 'dynamic_loader'):
     sqlalchemy.orm.dynamic_loader = lambda *args, **kwargs: None
 
-from flask import Flask, request, jsonify, render_template
-from flask_sqlalchemy import SQLAlchemy
-from flask_caching import Cache
-from flask_cors import CORS
+from flask import Flask, request, jsonify, render_template #pip install flask
+from flask_sqlalchemy import SQLAlchemy #pip install flask_sqlalchemy
+from flask_caching import Cache #pip install flask_caching
+from flask_cors import CORS #pip install flask_cors
 import os
 import csv
-import pandas as pd
+import pandas as pd #pip install flask_cors
 from tqdm import tqdm  # pip install tqdm
 
 # --- Monkey patch: subclass SQLAlchemy to add missing attributes ---
