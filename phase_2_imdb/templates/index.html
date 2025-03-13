@@ -4,8 +4,82 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <title>IMDb Project - Phase 1</title>
+  <title>IMDB Project - Phase 1</title>
   <style>
+      /* Dark Mode Toggle Styles */
+      body.dark-mode {
+        background: #121212;
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .container{
+        transform: scale(1); /* Remove zoom-out effect in dark mode */
+      }
+
+      body.dark-mode h1 {
+        color: #fff;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+      }
+
+      body.dark-mode.controls {
+        background: #333;
+        color: #fff;
+      }
+
+      body.dark-mode .controls select,
+      body.dark-mode .controls input,
+      body.dark-mode .controls button {
+        background: #444;
+        color: #fff;
+        border: 1px solid #666;
+      }
+
+      body.dark-mode.lists-container {
+        background: #222;
+      }
+
+      body.dark-mode .list-section {
+        background: #333;
+        color: #fff;
+      }
+
+      body.dark-mode .movie-item {
+        background: #444;
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .section-header h3 {
+        color: #fff; /*Ensures section titles are white in dark mode*/
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5); /* Optional for better visibility*/
+      }
+
+      body.dark-mode .error-message {
+        color: #f44336 
+      }
+
+      body.dark-mode .toast {
+        background: #333;
+        color: #fff;
+      }
+
+      body.dark-mode .modal{
+        background: rgba(0, 0, 0, 0.9);
+      }
+
+      body.dark-mode button:hover {
+        background-color: #ffca28;
+      }
+
+      body.dark-mode button {
+        background-color: #ffca28;
+      }
+
+      body.dark-mode .scroll-top-btn {
+        background-color: #444;
+        color: #fff;
+      }
+
+
     /* Container with zoom-out effect */
     .container {
       max-width: 1200px;
@@ -225,9 +299,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>IMDb Top 10</h1>
+    <h1>IMDB Top 10</h1>
 
     <div class="controls">
+      <button id="darkModeToggle">Toggle Dark Mode</button>
       <label for="genreSelect">Genre:</label>
       <select id="genreSelect">
         <option value="Action">Action</option>
@@ -251,6 +326,7 @@
         <option value="War">War</option>
         <option value="Western">Western</option>
         
+        <
 
       </select>
       <label for="minVotesInput">Min Votes:</label>
@@ -299,6 +375,45 @@
   </div>
 
   <script>
+    // JavaScript to toggle dark mode 
+    const darkModeToggle = document.getElementById("darkModeToggle");
+
+    // Function to update the button text based on the current theme
+    function updateButtonText() {
+      if (document.body.classList.contains("dark-mode")) {
+        darkModeToggle.textContent = "Toggle to Light Mode";
+      } else {
+        darkModeToggle.textContent = "Toggle to Dark Mode";
+      }
+    }
+
+
+
+    darkModeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+
+      // Save the theme to localStorage
+      if(document.body.classList.contains("dark-mode")) {
+        localStorage.setItem("theme", "dark");
+      } else {
+        localStorage.setItem("theme","light");
+      }
+
+      // Update button text after toggling the theme 
+      updateButtonText();
+    });
+
+    // Initial setup: Update the button text based on the saved theme
+    window.addEventListener("load", () => {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+      }
+      updateButtonText(); // Update the button text when the page loads
+    });
+
+
+
     // DOM elements
     const genreSelect = document.getElementById("genreSelect");
     const minVotesInput = document.getElementById("minVotesInput");
@@ -361,7 +476,7 @@
 
         favItem.innerHTML = `
           <strong>${index + 1}. ${movie.name}</strong><br>
-          IMDb ID: ${movie.id}<br>
+          IMDB ID: ${movie.id}<br>
           ${extraField}
         `;
 
@@ -448,7 +563,7 @@
             item.className = "movie-item";
             item.innerHTML = `
               <strong>${rank}. ${movie.name}</strong><br>
-              IMDb ID: ${movie.id}<br>
+              IMDB ID: ${movie.id}<br>
               Rating: ${movie.rating ?? "N/A"}/10
             `;
             const posterUrl = await fetchPoster(movie.id);
@@ -503,7 +618,7 @@
             item.className = "movie-item";
             item.innerHTML = `
               <strong>${rank}. ${movie.name}</strong><br>
-              IMDb ID: ${movie.id}<br>
+              IMDB ID: ${movie.id}<br>
               Votes: ${movie.votes ?? "N/A"}
             `;
             const posterUrl = await fetchPoster(movie.id);
