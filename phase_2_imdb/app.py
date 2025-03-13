@@ -129,6 +129,7 @@ def seed_from_imdb_datasets(basics_tsv, ratings_tsv, chunk_size=10000):
 
 # --- Function to fetch top 10 movies with caching ---
 def get_top_10_movies(genre, sort_by, min_votes_threshold=0, max_votes_threshold=None):
+    print(f"Applying filters: min_votes={min_votes_threshold}, max_votes={max_votes_threshold}")
     cache_key = f"top10_{genre}_{sort_by}_{min_votes_threshold}_{max_votes_threshold}"
     cached_result = cache.get(cache_key)
     if cached_result:
@@ -139,21 +140,30 @@ def get_top_10_movies(genre, sort_by, min_votes_threshold=0, max_votes_threshold
         query = query.filter(Movie.genre.ilike(f"%{genre}%"))
 
     if sort_by == 'rating':
-        movies = query.filter(Movie.rating != None).order_by(Movie.rating.desc()).all()
+        # Apply min/max votes filter first
+        movies = query.filter(Movie.rating != None).all()
         movies = [m for m in movies if parse_votes_to_int(m.votes) >= min_votes_threshold]
         if max_votes_threshold is not None:
             movies = [m for m in movies if parse_votes_to_int(m.votes) <= max_votes_threshold]
-        movies = movies[:10]
+        movies = sorted(movies, key=lambda m: m.rating, reverse=True)[:10]
+
     elif sort_by == 'votes':
-        all_movies = query.all()
-        movies_with_votes = [m for m in all_movies if m.votes]
-        movies = sorted(movies_with_votes, key=lambda m: parse_votes_to_int(m.votes), reverse=True)[:10]
+        # Apply min/max votes filter first
+        movies = query.all()
+        movies = [m for m in movies if m.votes and parse_votes_to_int(m.votes) >= min_votes_threshold]
+        if max_votes_threshold is not None:
+            movies = [m for m in movies if parse_votes_to_int(m.votes) <= max_votes_threshold]
+
+        # Now sort by votes AFTER filtering
+        movies = sorted(movies, key=lambda m: parse_votes_to_int(m.votes), reverse=True)[:10]
+
     else:
         movies = []
 
     result = [m.to_dict() for m in movies]
     cache.set(cache_key, result)
     return result
+
 
 @app.route("/api/movies", methods=["GET"])
 def api_get_movies():
