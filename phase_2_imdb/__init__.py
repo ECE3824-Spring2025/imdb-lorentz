@@ -1,0 +1,1 @@
+from .app import app, db, Movie, parse_votes_to_int, get_top_10_movies
