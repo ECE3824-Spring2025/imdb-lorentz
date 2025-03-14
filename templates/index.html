@@ -7,6 +7,13 @@
 
   <title>IMDb Project - Phase 1</title>
   <style>
+:root {
+  --main-cursor-color: rgb(198, 32, 217);
+}
+/*ensure only custom cursor is used*/
+* {
+cursor: none;
+}
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
   margin: 0;
@@ -48,7 +55,6 @@ h1 {
 .controls button {
   border: none;
   background-color: #ffca28;
-  cursor: pointer;
   transition: background-color 0.2s ease;
 }
 .controls button:hover {
@@ -116,12 +122,11 @@ h1 {
   background-color: #ffd54f;
   border: none;
   border-radius: 4px;
-  cursor: pointer;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 .movie-item button:hover {
   background-color: #ffca28;
-  transform: scale(1.03);
+  
 }
 
 /* ----- Error message styling ----- */
@@ -130,9 +135,46 @@ h1 {
   font-weight: bold;
   margin: 1rem 0;
 }
+/*Custom cursor styling*/
+@keyframes cursorAnimation {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(5px); }
+    100% { transform: translateY(0px); }
+}
+.custom-cursor {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background-color: --main-cursor-color;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    animation: cursorAnimation 1s infinite ease-in-out;
+    transition: transform 0.15s ease-out, opacity 0.2s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+/* Trailing effect: smaller circles */
+.trail {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: --main-cursor-color;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: fadeOut 0.5s forwards;  /* Fade out the trail after 0.5s */
+}
+@keyframes fadeOut {
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+  }
+
+
   </style>
 </head>
 <body>
+  <div class="custom-cursor" id="cursor"></div>
 
   <h1>IMDb Top 10</h1>
 
@@ -174,6 +216,7 @@ h1 {
     const ratingList = document.getElementById("ratingList");
     const votesList = document.getElementById("votesList");
     const favoritesList = document.getElementById("favoritesList");
+    const cursor = document.getElementById('cursor');
 
     // Flask server endpoint
     const API_BASE_URL = "http://127.0.0.1:8080/api/movies";
@@ -183,6 +226,76 @@ h1 {
 
     // Global array to store favorite movies (in-memory, not persisted)
     let favorites = [];
+
+    // ------ Cursor Stuff ------
+    const trailDuration = 250; // Duration for trail to stay visible in milliseconds
+    const trailDelay = 200; // Delay between each trail spawn in milliseconds (slow down the spawn rate)
+    let trailTimeout = null;
+    let lastX = null;
+    let lastY = null;
+    let currCursorColor = 'rgb(198, 32, 217)';
+
+    // Function to create the trailing effect at random positions near the cursor
+    function createTrail(x, y) {
+        const trail = document.createElement('div');
+        trail.classList.add('trail');  // Add the trail class
+        trail.style.backgroundColor = currCursorColor;
+        document.body.appendChild(trail);
+
+        // Randomize the trail's position (offset by a small random amount from the cursor)
+        const offsetX = (Math.random() - 0.5) * 30;  // Random offset in X direction
+        const offsetY = (Math.random() - 0.5) * 30;  // Random offset in Y direction
+        trail.style.left = `${x + offsetX + 4}px`;  // Offset by half of trail width/height for centered effect
+        trail.style.top = `${y + offsetY + 4}px`;
+
+        // Add trail element to the trails array
+        setTimeout(() => {
+            trail.remove();
+        }, trailDuration); // Duration to fade out and remove
+    }
+
+    // Start the interval for creating trails
+    function startTrail() {
+        trailTimeout = setInterval(() => {
+            if (lastX !== null && lastY !== null) {
+                createTrail(lastX, lastY); // Create trail at the last known cursor position
+            }
+        }, trailDelay);
+    }
+
+    // Start the trail interval when the page loads
+    window.onload = () => {
+        startTrail();
+    };
+
+    // Custom cursor movement
+    document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.pageX + 'px';
+            cursor.style.top = e.pageY + 'px';
+            lastX = e.pageX;
+            lastY = e.pageY;
+    });
+    
+    // Click Effect: Shrink briefly and change color on click
+    document.addEventListener('mousedown', () => {
+        cursor.style.width = '15px';
+        cursor.style.height = '15px';
+        cursor.style.backgroundColor = '#3eb7cd';  // Change color to clickColor
+        currCursorColor = '#3eb7cd';
+    });
+    document.addEventListener('mouseup', () => {
+      cursor.style.width = '18px';
+      cursor.style.height = '18px';
+      cursor.style.backgroundColor = 'rgb(198, 32, 217)';
+      currCursorColor = 'rgb(198, 32, 217)';
+
+    });
+    // Stop creating trails once the mouse stops moving (optional)
+    document.addEventListener('mouseleave', () => {
+        clearInterval(trailTimeout);
+        trailTimeout = null;
+    });
+    // ----- Cursor End -----
 
     // ------------------------------------------------------------
     // Helper: Renders the favorites in #favoritesList
