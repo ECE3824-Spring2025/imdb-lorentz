@@ -9,11 +9,11 @@
       /* Dark Mode Toggle Styles */
       body.dark-mode {
         background: #121212;
-        color: #e0e0e0;
+        color: #ffffff;
       }
 
       body.dark-mode .container{
-        transform: scale(1); /* Remove zoom-out effect in dark mode */
+        transform: scale(0.9); /* Remove zoom-out effect in dark mode */
       }
 
       body.dark-mode h1 {
@@ -40,14 +40,25 @@
 
       body.dark-mode .list-section {
         background: #333;
-        color: #fff;
+        color: #333;
       }
 
       body.dark-mode .movie-item {
-        background: #444;
-        color: #e0e0e0;
+        background: #333;
+        color: #ffffff;
       }
-
+      body.dark-mode .movie-item strong {
+      font-size: 1rem;
+      color: #ffffff;
+      }
+      body.dark-mode .section-header {
+      background: #333;
+      padding: 1rem;
+      border-bottom: 1px solid #ccc;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
       body.dark-mode .section-header h3 {
         color: #fff; /*Ensures section titles are white in dark mode*/
         text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5); /* Optional for better visibility*/
