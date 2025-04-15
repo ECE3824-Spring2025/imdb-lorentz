@@ -22,7 +22,7 @@ jobs:
       - name: Install OS dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgpgme-dev
+          sudo apt-get install -y libgpgme-dev libgpg-error-dev
 
       - name: Install dependencies
         run: |
@@ -31,18 +31,18 @@ jobs:
 
       - name: Run Tests
         run: |
-          # Replace with your actual test command, for example: pytest
+          # Replace with your actual test command, e.g., pytest
           echo "Running tests..."
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.EC2_HOST }}        # The public IP or DNS of your EC2 instance
-          username: ${{ secrets.EC2_USER }}      # Typically "ec2-user" (or "ubuntu" for Ubuntu)
-          key: ${{ secrets.EC2_SSH_KEY }}        # Your private PEM key contents
-          port: 22                             # SSH port
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
           script: |
-            cd /home/ec2-user/your-project      # Adjust to the correct directory on your EC2 instance
+            cd /home/ec2-user/your-project   # Adjust this path as needed on your EC2 instance
             git pull origin main
             pkill -f "python3 app.py" || true
             nohup python3 app.py > app.log 2>&1 &
