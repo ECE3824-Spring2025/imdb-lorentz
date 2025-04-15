@@ -24,8 +24,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgpgme-dev libgpg-error-dev pkg-config
           # Debug: check if gpgme-config is installed
-          which gpgme-config
-          gpgme-config --version
+          which gpgme-config || true
+          gpgme-config --version || true
 
       - name: Install dependencies
         run: |
@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          # Replace with your actual test command, for example, pytest
+          # Replace with your actual test command, e.g., pytest
           echo "Running tests..."
 
       - name: Deploy to EC2
