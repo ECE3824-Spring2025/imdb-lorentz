@@ -64,7 +64,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            cd /home/ec2-user/your-project   # Adjust this path as needed on your EC2 instance
+            cd /home/ec2-user/imdb-lorentz   # Adjust this path as needed on your EC2 instance
             git pull origin main
             pkill -f "python3 app.py" || true
             nohup python3 app.py > app.log 2>&1 &
