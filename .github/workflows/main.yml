@@ -29,20 +29,18 @@ jobs:
 
       - name: Stub gpgme-config if not found
         run: |
-          if ! command -v gpgme-config > /dev/null; then
+          if ! command -v gpgme-config >/dev/null; then
             echo "Creating stub for gpgme-config..."
-            sudo tee /usr/local/bin/gpgme-config <<-'EOF'
-#!/bin/bash
-if [ "$1" = "--version" ]; then
-  echo "1.18.0"
-elif [ "$1" = "--cflags" ]; then
-  echo "-I/usr/include/gpgme"
-elif [ "$1" = "--libs" ]; then
-  echo "-lgpgme"
-else
-  echo ""
-fi
-EOF
+            sudo bash -c 'echo "#!/bin/bash" > /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "if [ \"$1\" = \"--version\" ]; then" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "  echo \"1.18.0\"" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "elif [ \"$1\" = \"--cflags\" ]; then" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "  echo \"-I/usr/include/gpgme\"" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "elif [ \"$1\" = \"--libs\" ]; then" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "  echo \"-lgpgme\"" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "else" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "  echo \"\"" >> /usr/local/bin/gpgme-config'
+            sudo bash -c 'echo "fi" >> /usr/local/bin/gpgme-config'
             sudo chmod +x /usr/local/bin/gpgme-config
           fi
           echo "Using gpgme-config at: $(which gpgme-config)"
@@ -55,7 +53,7 @@ EOF
 
       - name: Run Tests
         run: |
-          # Replace with your actual test command, e.g. pytest
+          # Replace with your actual test command, e.g., pytest
           echo "Running tests..."
 
       - name: Deploy to EC2
