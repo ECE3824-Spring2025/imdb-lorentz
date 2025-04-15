@@ -7,6 +7,9 @@ on:
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase_3_imdb
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -23,7 +26,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          # e.g., pytest
+          # Replace with your actual test command, for example, pytest
           echo "Running tests..."
 
       - name: Deploy to EC2
