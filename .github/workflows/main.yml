@@ -22,8 +22,8 @@ jobs:
       - name: Install OS dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgpgme-dev libgpg-error-dev pkg-config
-          # Debug: check if gpgme-config is installed
+          sudo apt-get install -y libgpgme-dev libgpg-error-dev pkg-config gpgme-tools
+          # Debug: Confirm gpgme-config is installed
           which gpgme-config || true
           gpgme-config --version || true
 
