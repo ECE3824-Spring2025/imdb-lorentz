@@ -67,7 +67,8 @@ jobs:
           timeout:     120s
           script_stop: false
           script: |
-            set -eu          # ← change here: drop the -x so pkill failures won’t abort
+            set -eu         # exit on any error, drop -x
+            set +x          # turn off the entrypoint’s xtrace so you don’t get “err: + …”
       
             # 1) ensure git is installed
             if ! command -v git >/dev/null; then
@@ -83,11 +84,11 @@ jobs:
               cd "$REPO_ROOT"
             fi
       
-            # 3) stop any old Flask processes (|| true guards against “no process” errors)
+            # 3) stop any old Flask processes
             pkill -f "python3 app.py" || true
       
-            # 4) start Flask fully detached
+            # 4) launch Flask fully detached
             nohup python3 app.py > app.log 2>&1 < /dev/null & disown
       
-            # 5) explicitly succeed so SSH action doesn’t kill the session
+            # 5) explicitly succeed so SSH action stays happy
             exit 0
