@@ -87,7 +87,7 @@ jobs:
 
             # Start Flask in a tmux session
             cd "$REPO_ROOT"
-            tmux new-session -d -s flask "python3 app.py"
+            tmux new-session -d -s flask "FLASK_ENV=production python3 app.py"
 
             # Done
             exit 0
