@@ -59,23 +59,28 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.EC2_HOST }}          # ec2-3-82-235-107.compute-1.amazonaws.com
-          username: ${{ secrets.EC2_USER }}      # ec2-user
-          key:      ${{ secrets.EC2_SSH_KEY }}   # Your PEM private key
+          host: ${{ secrets.EC2_HOST }}      # ec2-3-82-235-107.compute-1.amazonaws.com
+          username: ${{ secrets.EC2_USER }}  # ec2-user
+          key:      ${{ secrets.EC2_SSH_KEY }}
           port:     22
           script: |
-            # 1) make sure git is there (on Amazon Linux 2023 use dnf; on Ubuntu you'd use apt)
+            # install git if needed
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
 
-            # 2) clone once if absent
+            # clone once
             if [ ! -d ~/imdb-lorentz ]; then
               git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
             fi
 
-            # 3) pull latest, restart your app
+            # pull & restart
             cd ~/imdb-lorentz
             git pull origin main
             pkill -f "python3 app.py" || true
-            nohup python3 app.py > app.log 2>&1 &
+
+            # detach completely: redirect stdout, stderr, AND stdin
+            nohup python3 app.py > app.log 2>&1 < /dev/null &
+
+            # now exit — the SSH session will close immediately
+            exit 0
