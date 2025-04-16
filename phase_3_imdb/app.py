@@ -186,6 +186,5 @@ def init_app():
         seed_from_imdb_datasets(basics_tsv="title.basics.tsv", ratings_tsv="title.ratings.tsv")
 
 if __name__ == "__main__":
-    init_app()  # seed the DB
-    # listen on 0.0.0.0 so EC2’s public IP can reach it
+    init_app()
     app.run(host="0.0.0.0", port=8080, debug=False)
