@@ -59,26 +59,28 @@ jobs:
       - name: Deploy and restart Flask app
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host:        ${{ secrets.EC2_HOST }}
-          username:    ${{ secrets.EC2_USER }}
-          key:         ${{ secrets.EC2_SSH_KEY }}
-          port:    22
-          script_stop: false       # ← don’t kill background jobs
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          port:     22
+          script_stop: false
           script: |
             # install git if missing
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
-      
-            # clone or update
+
+            # clone if needed
             if [ ! -d ~/imdb-lorentz ]; then
               git clone https://github.com/ECE3824-Spring2025/imdb-lorentz.git ~/imdb-lorentz
             fi
-      
+
             cd ~/imdb-lorentz/phase_3_imdb
             git pull origin main || true
             pkill -f "python3 app.py" || true
-      
-            # launch Flask in background
+
+            # start Flask in background
             nohup python3 app.py > app.log 2>&1 < /dev/null &
 
+            # signal success
+            exit 0
