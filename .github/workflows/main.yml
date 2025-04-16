@@ -56,30 +56,35 @@ jobs:
           # Replace with your actual test command, e.g., pytest
           echo "Running tests..."
 
-      - name: Deploy and restart Flask app
+      - name: Deploy & restart Flask app
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host:        ${{ secrets.EC2_HOST }}
-          username:    ${{ secrets.EC2_USER }}
-          key:         ${{ secrets.EC2_SSH_KEY }}
-          port:        22
-          timeout:     60s           # ← give it up to a minute
-          script_stop: false
+          host:      ${{ secrets.EC2_HOST }}
+          username:  ${{ secrets.EC2_USER }}
+          key:       ${{ secrets.EC2_SSH_KEY }}
+          port:      22
+          sync:      false         # we don’t need to rsync anything
+          timeout:   120s          # bump the SSH connect timeout if you like
+          # command_timeout defaults to 10m, so long enough
           script: |
-            # install git if missing
+            set -eux
+
+            # 1) make sure git is installed
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
 
-            # clone or update
-            if [ ! -d ~/imdb-lorentz ]; then
-              git clone https://github.com/ECE3824-Spring2025/imdb-lorentz.git ~/imdb-lorentz
+            # 2) pull (or clone) your repo
+            if [ -d ~/imdb-lorentz ]; then
+              cd ~/imdb-lorentz/phase_3_imdb
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
+              cd ~/imdb-lorentz/phase_3_imdb
             fi
 
-            cd ~/imdb-lorentz/phase_3_imdb
-            git pull origin main || true
+            # 3) restart the old app
             pkill -f "python3 app.py" || true
 
-            # launch Flask in background
-            nohup python3 app.py > app.log 2>&1 < /dev/null &
-            exit 0
+            # 4) launch Flask completely detached
+            nohup python3 app.py > app.log 2>&1 < /dev/null & disown
