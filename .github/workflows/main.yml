@@ -63,17 +63,17 @@ jobs:
           username:    ${{ secrets.EC2_USER }}
           key:         ${{ secrets.EC2_SSH_KEY }}
           port:        22
-          sync:        false           # don’t rsync anything
-          timeout:     120s            # bump SSH connect timeout
-          script_stop: false           # keep remote background jobs alive
+          sync:        false
+          timeout:     120s
+          script_stop: false
           script: |
-            set -eux
-
+            set -eu          # ← change here: drop the -x so pkill failures won’t abort
+      
             # 1) ensure git is installed
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
-
+      
             # 2) clone or update your repo
             REPO_ROOT=~/imdb-lorentz/phase_3_imdb
             if [ -d "$REPO_ROOT" ]; then
@@ -82,12 +82,12 @@ jobs:
               git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
               cd "$REPO_ROOT"
             fi
-
-            # 3) stop any old Flask processes
+      
+            # 3) stop any old Flask processes (|| true guards against “no process” errors)
             pkill -f "python3 app.py" || true
-
-            # 4) start Flask fully detached (nohup will swallow SIGHUP)
-            nohup python3 app.py > app.log 2>&1 < /dev/null &
-
-            # 5) exit cleanly so the SSH‐action step itself succeeds
+      
+            # 4) start Flask fully detached
+            nohup python3 app.py > app.log 2>&1 < /dev/null & disown
+      
+            # 5) explicitly succeed so SSH action doesn’t kill the session
             exit 0
