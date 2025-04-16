@@ -59,32 +59,35 @@ jobs:
       - name: Deploy & restart Flask app
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host:      ${{ secrets.EC2_HOST }}
-          username:  ${{ secrets.EC2_USER }}
-          key:       ${{ secrets.EC2_SSH_KEY }}
-          port:      22
-          sync:      false         # we don’t need to rsync anything
-          timeout:   120s          # bump the SSH connect timeout if you like
-          # command_timeout defaults to 10m, so long enough
+          host:        ${{ secrets.EC2_HOST }}
+          username:    ${{ secrets.EC2_USER }}
+          key:         ${{ secrets.EC2_SSH_KEY }}
+          port:        22
+          sync:        false          # don’t rsync anything
+          timeout:     120s           # bump SSH connect timeout
+          script_stop: false          # don’t kill background jobs on exit
           script: |
             set -eux
 
-            # 1) make sure git is installed
+            # 1) ensure git is installed
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
 
-            # 2) pull (or clone) your repo
-            if [ -d ~/imdb-lorentz ]; then
-              cd ~/imdb-lorentz/phase_3_imdb
-              git pull origin main
+            # 2) clone or update your repo
+            REPO_ROOT=~/imdb-lorentz/phase_3_imdb
+            if [ -d "$REPO_ROOT" ]; then
+              cd "$REPO_ROOT" && git pull origin main
             else
               git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
-              cd ~/imdb-lorentz/phase_3_imdb
+              cd "$REPO_ROOT"
             fi
 
-            # 3) restart the old app
+            # 3) stop any old Flask processes
             pkill -f "python3 app.py" || true
 
-            # 4) launch Flask completely detached
+            # 4) start Flask fully detached
             nohup python3 app.py > app.log 2>&1 < /dev/null & disown
+
+            # 5) explicitly succeed so SSH action doesn’t kill the session
+            exit 0
