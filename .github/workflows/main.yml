@@ -67,15 +67,13 @@ jobs:
           timeout:     120s
           script_stop: false
           script: |
-            set -eu         # exit on any error, drop -x
-            set +x          # turn off the entrypoint’s xtrace so you don’t get “err: + …”
-      
-            # 1) ensure git is installed
-            if ! command -v git >/dev/null; then
-              sudo dnf install -y git || sudo yum install -y git
-            fi
-      
-            # 2) clone or update your repo
+            set -eu
+            set +x  # disable noisy trace output
+
+            # Ensure required tools are installed
+            sudo yum install -y tmux git || sudo apt-get install -y tmux git
+
+            # Clone or pull repo
             REPO_ROOT=~/imdb-lorentz/phase_3_imdb
             if [ -d "$REPO_ROOT" ]; then
               cd "$REPO_ROOT" && git pull origin main
@@ -83,12 +81,13 @@ jobs:
               git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
               cd "$REPO_ROOT"
             fi
-      
-            # 3) stop any old Flask processes
-            pkill -f "python3 app.py" || true
-      
-            # 4) launch Flask fully detached
-            nohup python3 app.py > app.log 2>&1 < /dev/null & disown
-      
-            # 5) explicitly succeed so SSH action stays happy
+
+            # Kill old Flask app if running in tmux
+            tmux kill-session -t flask || true
+
+            # Start Flask in a tmux session
+            cd "$REPO_ROOT"
+            tmux new-session -d -s flask "python3 app.py"
+
+            # Done
             exit 0
