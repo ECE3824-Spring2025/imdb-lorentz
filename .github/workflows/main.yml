@@ -63,7 +63,7 @@ jobs:
           username:  ${{ secrets.EC2_USER }}
           key:       ${{ secrets.EC2_SSH_KEY }}
           port:      22
-          sync:      false            # ← add this!
+          sync:      false
           script: |
             # install git if needed
             if ! command -v git >/dev/null; then
@@ -77,8 +77,11 @@ jobs:
       
             # pull & restart
             cd ~/imdb-lorentz
-            git pull origin main
+            git pull origin main || true
             pkill -f "python3 app.py" || true
       
-            # fully detach, no stdin
+            # detach completely
             nohup python3 app.py > app.log 2>&1 < /dev/null &
+      
+            # ensure the SSH script itself exits cleanly
+            exit 0
