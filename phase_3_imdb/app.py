@@ -183,10 +183,7 @@ def home():
 # --- Application Initialization ---
 def init_app():
     with app.app_context():
-        db.drop_all()    # Drop all tables for a clean start (useful during development)
-        db.create_all()  # Create tables
-        # Provide paths to your local TSV files
-        seed_from_imdb_datasets(basics_tsv="title.basics.tsv", ratings_tsv="title.ratings.tsv")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
