@@ -56,33 +56,29 @@ jobs:
           # Replace with your actual test command, e.g., pytest
           echo "Running tests..."
 
-      - name: Deploy to EC2
+      - name: Deploy and restart Flask app
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host:        ${{ secrets.EC2_HOST }}
-          username:    ${{ secrets.EC2_USER }}
-          key:         ${{ secrets.EC2_SSH_KEY }}
-          port:        22
-          sync:        false
-          script_stop: true    # auto-exit SSH when the script finishes
-          timeout:     60s
+          host:    ${{ secrets.HOST }}
+          username:  ${{ secrets.USERNAME }}
+          key:     ${{ secrets.KEY }}
+          port:    22
+          script_stop: false       # ← don’t kill background jobs
           script: |
             # install git if missing
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
       
-            # clone (or update) your repo
+            # clone or update
             if [ ! -d ~/imdb-lorentz ]; then
-              git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
+              git clone https://github.com/ECE3824-Spring2025/imdb-lorentz.git ~/imdb-lorentz
             fi
       
-            # go into the phase_3_imdb folder
             cd ~/imdb-lorentz/phase_3_imdb
-      
-            # pull latest & restart your Flask app
             git pull origin main || true
             pkill -f "python3 app.py" || true
       
-            # detach and run
+            # launch Flask in background
             nohup python3 app.py > app.log 2>&1 < /dev/null &
+
