@@ -180,9 +180,6 @@ def api_get_movies():
 def home():
     return render_template('index.html', title="Project IMDB - Phase 2")
 
-# --- Application Initialization ---
-def init_app():
-    with app.app_context():
 
 
 if __name__ == "__main__":
