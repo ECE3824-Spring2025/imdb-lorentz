@@ -40,7 +40,10 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # --- Configuration ---
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///movies.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+    'DATABASE_URI',
+    'mysql+pymysql://admin:password@imdb.cxc0y8aocyro.us-east-1.rds.amazonaws.com:3306/imdb'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300
@@ -186,8 +189,4 @@ def init_app():
         seed_from_imdb_datasets(basics_tsv="title.basics.tsv", ratings_tsv="title.ratings.tsv")
 
 if __name__ == "__main__":
-    # Only call init_app() in dev/test, not production deploy
-    if os.getenv("FLASK_ENV") != "production":
-
-        app.run(host="0.0.0.0", port=8080, debug=False)
-
+    app.run(host="0.0.0.0", port=8080, debug=False)
