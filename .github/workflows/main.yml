@@ -59,29 +59,30 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host:      ${{ secrets.EC2_HOST }}
-          username:  ${{ secrets.EC2_USER }}
-          key:       ${{ secrets.EC2_SSH_KEY }}
-          port:      22
-          sync:      false
+          host:        ${{ secrets.EC2_HOST }}
+          username:    ${{ secrets.EC2_USER }}
+          key:         ${{ secrets.EC2_SSH_KEY }}
+          port:        22
+          sync:        false
+          script_stop: true    # auto-exit SSH when the script finishes
+          timeout:     60s
           script: |
-            # install git if needed
+            # install git if missing
             if ! command -v git >/dev/null; then
               sudo dnf install -y git || sudo yum install -y git
             fi
       
-            # clone once
+            # clone (or update) your repo
             if [ ! -d ~/imdb-lorentz ]; then
               git clone https://github.com/${{ github.repository }}.git ~/imdb-lorentz
             fi
       
-            # pull & restart
-            cd ~/imdb-lorentz
+            # go into the phase_3_imdb folder
+            cd ~/imdb-lorentz/phase_3_imdb
+      
+            # pull latest & restart your Flask app
             git pull origin main || true
             pkill -f "python3 app.py" || true
       
-            # detach completely
+            # detach and run
             nohup python3 app.py > app.log 2>&1 < /dev/null &
-      
-            # ensure the SSH script itself exits cleanly
-            exit 0
