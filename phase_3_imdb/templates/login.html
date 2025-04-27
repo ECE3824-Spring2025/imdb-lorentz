@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Page</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    body.dark-mode {
+      background-color: #121212;
+      color: white;
+    }
+
+    .login-box {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-align: center;
+      width: 300px;
+    }
+
+    body.dark-mode .login-box {
+      background-color: #1e1e1e;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    body.dark-mode input[type="text"],
+    body.dark-mode input[type="password"] {
+      background-color: #333;
+      color: white;
+      border: 1px solid #555;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #ffca28;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #ffc107;
+    }
+
+    .link-button {
+      background: none;
+      border: none;
+      color: #007bff;
+      cursor: pointer;
+      margin-top: 10px;
+      text-decoration: underline;
+      font-size: 0.9rem;
+    }
+
+    .toggle-mode {
+      margin-top: 15px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <h1>Team Lorentz IMDB Login</h1>
+    <form action="/login" method="POST">
+      <input type="text" name="username" placeholder="Username" required><br>
+      <input type="password" name="password" placeholder="Password" required><br>
+      <button type="submit">Login</button>
+    </form>
+
+    <form action="/register">
+      <button class="link-button">Don't have an account? Register here</button>
+    </form>
+
+    <div class="toggle-mode" onclick="toggleDarkMode()">Toggle Dark Mode</div>
+  </div>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark-mode");
+      localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+    }
+
+    window.addEventListener("load", () => {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+      }
+    });
+  </script>
+
+</body>
+</html>
