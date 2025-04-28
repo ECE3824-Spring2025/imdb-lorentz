@@ -225,7 +225,7 @@ def api_get_movies():
 # --- Home Page Route ---
 @app.route("/", methods=["GET"])
 def home():
-    return render_template('index.html', title="Project IMDB - Phase 2")
+    return render_template('login.html', title="Project IMDB - Phase 2")
 
 
 
