@@ -42,9 +42,6 @@ def login():
     # If no match found
     return render_template('login.html', error="Invalid username or password.")
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
 import sqlalchemy #pip install sqlalchemy
 import sqlalchemy.orm
 
