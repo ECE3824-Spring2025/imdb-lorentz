@@ -38,12 +38,6 @@
       margin-bottom: 1rem;
     }
 
-    .error {
-      color: #d32f2f;
-      margin-bottom: 1rem;
-      font-weight: bold;
-    }
-
     input[type="text"], input[type="password"] {
       width: 90%;
       padding: 10px;
@@ -98,18 +92,13 @@
 
   <div class="login-box">
     <h1>Create an Account</h1>
-
-    {% if error %}
-      <p class="error">{{ error }}</p>
-    {% endif %}
-
-    <form action="{{ url_for('register') }}" method="POST">
+    <form action="/register" method="POST">
       <input type="text" name="username" placeholder="Choose a Username" required><br>
       <input type="password" name="password" placeholder="Choose a Password" required><br>
       <button type="submit">Register</button>
     </form>
 
-    <form action="{{ url_for('show_login') }}" method="GET">
+    <form action="/">
       <button class="link-button">Already have an account? Log in</button>
     </form>
 
@@ -119,10 +108,7 @@
   <script>
     function toggleDarkMode() {
       document.body.classList.toggle("dark-mode");
-      localStorage.setItem(
-        "theme",
-        document.body.classList.contains("dark-mode") ? "dark" : "light"
-      );
+      localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
     }
 
     window.addEventListener("load", () => {
