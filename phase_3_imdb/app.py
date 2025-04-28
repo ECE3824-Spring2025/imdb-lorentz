@@ -220,10 +220,39 @@ def api_get_movies():
     return jsonify(data), 200
 
 # --- Home Page Route ---
-@app.route("/", methods=["GET"])
-def home():
-    return render_template('login.html', title="Project IMDB - Phase 2")
+# -------------------------------------------------------------------
 
+@app.route("/")
+def index():
+    return render_template("login.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return redirect(url_for("index"))
+
+    username = request.form.get("username", "")
+    password = request.form.get("password", "")
+    try:
+        with open("users.txt") as f:
+            for line in f:
+                u, p = line.strip().split(":", 1)
+                if u == username and p == password:
+                    return render_template("welcome.html", username=username)
+    except FileNotFoundError:
+        pass
+
+    return render_template("login.html", error="Invalid username or password.")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        with open("users.txt", "a") as f:
+            f.write(f"{username}:{password}\n")
+        return render_template("registered_popup.html", username=username)
+    return render_template("register.html")
 
 
 if __name__ == "__main__":
