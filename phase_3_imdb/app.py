@@ -6,6 +6,7 @@ from flask import (
     url_for,
     jsonify
 )
+import base64
 import sqlalchemy  # pip install sqlalchemy
 import sqlalchemy.orm
 from flask_sqlalchemy import SQLAlchemy  # pip install flask_sqlalchemy
@@ -14,6 +15,15 @@ from flask_cors import CORS             # pip install flask_cors
 import os
 import pandas as pd                     # pip install pandas
 from tqdm import tqdm                   # pip install tqdm
+
+# ─── Helper: Base64 encode/decode ──────────────────────────────────────────────
+def encode_base64(value: str) -> str:
+    """Encode a string to Base64."""
+    return base64.b64encode(value.encode('utf-8')).decode('utf-8')
+
+def decode_base64(encoded: str) -> str:
+    """Decode a Base64 string."""
+    return base64.b64decode(encoded.encode('utf-8')).decode('utf-8')
 
 # ─── Monkey-patch SQLAlchemy Session.get_bind to avoid extra-arg errors ──────
 def patched_get_bind(self, mapper=None, clause=None):
@@ -111,11 +121,25 @@ def seed_from_imdb_datasets(basics_tsv, ratings_tsv, chunk_size=10000):
         db.session.commit()
 
 # ─── Top-10 API with caching ─────────────────────────────────────────────────
-def get_top_10_movies(genre, sort_by, min_votes=0, max_votes=None):
+@app.route("/api/movies", methods=["GET"])
+def api_get_movies():
+    genre   = request.args.get("genre", default="all")
+    sort_by = request.args.get("sortBy", default="rating")
+    try:
+        min_votes = int(request.args.get("minVotes", 0))
+    except ValueError:
+        min_votes = 0
+    mvp       = request.args.get("maxVotes")
+    try:
+        max_votes = int(mvp) if mvp else None
+    except ValueError:
+        max_votes = None
+
+    # build & cache the query
     key = f"top10_{genre}_{sort_by}_{min_votes}_{max_votes}"
     cached = cache.get(key)
     if cached:
-        return cached
+        return jsonify(cached), 200
 
     query = Movie.query
     if genre.lower() != "all":
@@ -127,7 +151,7 @@ def get_top_10_movies(genre, sort_by, min_votes=0, max_votes=None):
         if max_votes is not None:
             lst = [m for m in lst if parse_votes_to_int(m.votes) <= max_votes]
         lst = lst[:10]
-    else:  # votes
+    else:
         allm = query.all()
         lst = sorted(
             [m for m in allm if m.votes],
@@ -137,65 +161,65 @@ def get_top_10_movies(genre, sort_by, min_votes=0, max_votes=None):
 
     result = [m.to_dict() for m in lst]
     cache.set(key, result)
-    return result
-
-@app.route("/api/movies", methods=["GET"])
-def api_get_movies():
-    genre           = request.args.get("genre", default="all")
-    sort_by         = request.args.get("sortBy", default="rating")
-    try:
-        min_votes    = int(request.args.get("minVotes", 0))
-    except ValueError:
-        min_votes    = 0
-    mvp             = request.args.get("maxVotes")
-    try:
-        max_votes    = int(mvp) if mvp else None
-    except ValueError:
-        max_votes    = None
-
-    return jsonify(get_top_10_movies(genre, sort_by, min_votes, max_votes)), 200
+    return jsonify(result), 200
 
 # ─── LOGIN / REGISTER / DASHBOARD / LOGOUT ────────────────────────────────────
-# Login page
+
+# Show login page
 @app.route("/", methods=["GET"])
 def show_login():
     return render_template("login.html")
-    
+
+# Handle login form (GET shows form, POST processes it)
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = request.form["username"]
-        pw   = request.form["password"]
+        raw_user = request.form["username"]
+        raw_pw   = request.form["password"]
+        enc_user = encode_base64(raw_user)
+        enc_pw   = encode_base64(raw_pw)
+
         try:
             with open("users.txt") as f:
                 for line in f:
-                    u, p = line.strip().split(":", 1)
-                    if u == user and p == pw:
-                        # Show welcome page (auto-redirect to /dashboard in the template)
-                        return render_template("welcome.html", username=user)
+                    saved_user, saved_pw = line.strip().split(":", 1)
+                    if saved_user == enc_user and saved_pw == enc_pw:
+                        # successful login → welcome (auto-redirects in template)
+                        return render_template("welcome.html", username=raw_user)
         except FileNotFoundError:
             pass
+
+        # failed authentication
         return render_template("login.html", error="Invalid username or password.")
-    # GET → show login form
+
+    # GET → just show the form
     return render_template("login.html")
 
+# Registration page & form
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        u = request.form["username"]
-        p = request.form["password"]
+        raw_user = request.form["username"]
+        raw_pw   = request.form["password"]
+        enc_user = encode_base64(raw_user)
+        enc_pw   = encode_base64(raw_pw)
+
         with open("users.txt", "a") as f:
-            f.write(f"{u}:{p}\n")
-        return render_template("registered_popup.html", username=u)
+            f.write(f"{enc_user}:{enc_pw}\n")
+
+        return render_template("registered_popup.html", username=raw_user)
+
     return render_template("register.html")
 
+# Dashboard (your index.html)
 @app.route("/dashboard")
 def dashboard():
     return render_template("index.html")
 
+# Logout simply redirects to login
 @app.route("/logout")
 def logout():
-    return redirect(url_for("login"))
+    return redirect(url_for("show_login"))
 
 # ─── Run the server ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
