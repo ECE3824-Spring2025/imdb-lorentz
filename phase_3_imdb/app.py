@@ -226,35 +226,28 @@ def api_get_movies():
     data = get_top_10_movies(genre, sort_by, min_votes_threshold, max_votes_threshold)
     return jsonify(data), 200
 
-# --- Home Page Route ---
-# -------------------------------------------------------------------
-# Login page
-@app.route("/", methods=["GET"])
-def show_login():
+
+# ─── Login / Landing ───────────────────────────────────
+@app.route("/", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        try:
+            with open("users.txt") as f:
+                for line in f:
+                    u, p = line.strip().split(":", 1)
+                    if u == username and p == password:
+                        # show welcome (which auto-redirects to /dashboard)
+                        return render_template("welcome.html", username=username)
+        except FileNotFoundError:
+            pass
+        return render_template("login.html", error="Invalid username or password.")
+    # GET → show login form
     return render_template("login.html")
 
-# Handle login (GET → back to login; POST → auth)
-@app.route("/login", methods=["GET","POST"])
-def login():
-    if request.method == "GET":
-        return redirect(url_for("show_login"))
 
-    username = request.form.get("username","")
-    password = request.form.get("password","")
-
-    try:
-        with open("users.txt") as f:
-            for line in f:
-                u, p = line.strip().split(":",1)
-                if u == username and p == password:
-                    # ← Render your welcome.html here:
-                    return render_template("welcome.html", username=username)
-    except FileNotFoundError:
-        pass
-
-    return render_template("login.html", error="Invalid username or password.")
-
-# Registration
+# ─── Registration ──────────────────────────────────────
 @app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
@@ -265,14 +258,19 @@ def register():
         return render_template("registered_popup.html", username=u)
     return render_template("register.html")
 
-@app.route("/dashboard", methods=["GET"])
+
+# ─── Dashboard ─────────────────────────────────────────
+@app.route("/dashboard")
 def dashboard():
     return render_template("index.html")
 
-# Optional: a log-out endpoint that just sends you back to /
+
+# ─── Log out ───────────────────────────────────────────
 @app.route("/logout")
 def logout():
-    return redirect(url_for("show_login"))
+    return redirect(url_for("login"))
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
