@@ -155,21 +155,22 @@ def api_get_movies():
 
     return jsonify(get_top_10_movies(genre, sort_by, min_votes, max_votes)), 200
 
-# ─── Authentication + dashboard routes ───────────────────────────────────────
+# ─── LOGIN / REGISTER / DASHBOARD / LOGOUT ────────────────────────────────────
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = request.form.get("username", "")
-        pw   = request.form.get("password", "")
+        user = request.form["username"]
+        pw = request.form["password"]
         try:
             with open("users.txt") as f:
                 for line in f:
                     u, p = line.strip().split(":", 1)
                     if u == user and p == pw:
-                        return render_template("welcome.html", username=u)
+                        return render_template("welcome.html", username=user)
         except FileNotFoundError:
             pass
         return render_template("login.html", error="Invalid username or password.")
+    # GET → show login form
     return render_template("login.html")
 
 @app.route("/register", methods=["GET", "POST"])
@@ -190,6 +191,6 @@ def dashboard():
 def logout():
     return redirect(url_for("login"))
 
-# ─── Run ────────────────────────────────────────────────────────────────────
+# ─── Run the app ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
