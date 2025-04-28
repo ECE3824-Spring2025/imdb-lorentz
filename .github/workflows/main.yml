@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]  # Adjust if needed
+    branches: [ main ]
 
 jobs:
   build-test-deploy:
@@ -10,6 +10,7 @@ jobs:
     defaults:
       run:
         working-directory: phase_3_imdb
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -23,24 +24,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgpgme-dev libgpg-error-dev pkg-config
-          # Debug: Confirm gpgme-config is installed
           which gpgme-config || true
           gpgme-config --version || true
 
       - name: Stub gpgme-config if not found
         run: |
           if ! command -v gpgme-config >/dev/null; then
-            echo "Creating stub for gpgme-config..."
-            sudo bash -c 'echo "#!/bin/bash" > /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "if [ \"$1\" = \"--version\" ]; then" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "  echo \"1.18.0\"" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "elif [ \"$1\" = \"--cflags\" ]; then" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "  echo \"-I/usr/include/gpgme\"" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "elif [ \"$1\" = \"--libs\" ]; then" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "  echo \"-lgpgme\"" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "else" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "  echo \"\"" >> /usr/local/bin/gpgme-config'
-            sudo bash -c 'echo "fi" >> /usr/local/bin/gpgme-config'
+            sudo tee /usr/local/bin/gpgme-config > /dev/null << 'EOF'
+    #!/bin/bash
+    if [ "$1" = "--version" ]; then
+      echo "1.18.0"
+    elif [ "$1" = "--cflags" ]; then
+      echo "-I/usr/include/gpgme"
+    elif [ "$1" = "--libs" ]; then
+      echo "-lgpgme"
+    else
+      echo ""
+    fi
+    EOF
             sudo chmod +x /usr/local/bin/gpgme-config
           fi
           echo "Using gpgme-config at: $(which gpgme-config)"
@@ -63,17 +64,13 @@ jobs:
           username:    ${{ secrets.EC2_USER }}
           key:         ${{ secrets.EC2_SSH_KEY }}
           port:        22
-          sync:        false
           timeout:     120s
           script_stop: false
           script: |
             set -eu
-            set +x  # disable noisy trace output
-
-            # Ensure required tools are installed
+            # Ensure tmux & git are installed
             sudo yum install -y tmux git || sudo apt-get install -y tmux git
 
-            # Clone or pull repo
             REPO_ROOT=~/imdb-lorentz/phase_3_imdb
             if [ -d "$REPO_ROOT" ]; then
               cd "$REPO_ROOT" && git pull origin main
@@ -82,12 +79,11 @@ jobs:
               cd "$REPO_ROOT"
             fi
 
-            # Kill old Flask app if running in tmux
-            tmux kill-session -t flask || true
+            # Install Python dependencies on the EC2 host
+            pip3 install --user -r requirements.txt
 
-            # Start Flask in a tmux session
-            cd "$REPO_ROOT"
+            # Restart Flask in tmux
+            tmux kill-session -t flask || true
             tmux new-session -d -s flask "FLASK_ENV=production python3 app.py"
 
-            # Done
             exit 0
