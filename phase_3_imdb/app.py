@@ -15,14 +15,13 @@ from flask_cors import CORS             # pip install flask_cors
 import os
 import pandas as pd                     # pip install pandas
 from tqdm import tqdm                   # pip install tqdm
+import traceback
 
 # ─── Helper: Base64 encode/decode ──────────────────────────────────────────────
 def encode_base64(value: str) -> str:
-    """Encode a string to Base64."""
     return base64.b64encode(value.encode('utf-8')).decode('utf-8')
 
 def decode_base64(encoded: str) -> str:
-    """Decode a Base64 string."""
     return base64.b64decode(encoded.encode('utf-8')).decode('utf-8')
 
 # ─── Monkey-patch SQLAlchemy Session.get_bind to avoid extra-arg errors ──────
@@ -51,6 +50,8 @@ PatchedSQLAlchemy.Float          = sqlalchemy.Float
 
 # ─── Flask app + extensions ─────────────────────────────────────────────────
 app = Flask(__name__)
+# enable the debugger and auto-reload
+app.config['DEBUG'] = True
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config['SQLALCHEMY_DATABASE_URI']        = os.getenv(
@@ -67,7 +68,7 @@ cache = Cache(app)
 # ─── Database Model ─────────────────────────────────────────────────────────
 class Movie(db.Model):
     __tablename__ = 'movies'
-    id     = db.Column(db.String(20), primary_key=True)  # IMDb tconst
+    id     = db.Column(db.String(20), primary_key=True)
     name   = db.Column(db.String(200), nullable=False, default="Unknown")
     rating = db.Column(db.Float, nullable=True)
     votes  = db.Column(db.String(20), nullable=True)
@@ -98,15 +99,14 @@ def api_get_movies():
         min_votes = int(request.args.get("minVotes", 0))
     except ValueError:
         min_votes = 0
-    mvp       = request.args.get("maxVotes")
+    mvp  = request.args.get("maxVotes")
     try:
         max_votes = int(mvp) if mvp else None
     except ValueError:
         max_votes = None
 
-    # build & cache the query
-    key = f"top10_{genre}_{sort_by}_{min_votes}_{max_votes}"
-    cached = cache.get(key)
+    cache_key = f"top10_{genre}_{sort_by}_{min_votes}_{max_votes}"
+    cached = cache.get(cache_key)
     if cached:
         return jsonify(cached), 200
 
@@ -129,7 +129,7 @@ def api_get_movies():
         )[:10]
 
     result = [m.to_dict() for m in lst]
-    cache.set(key, result)
+    cache.set(cache_key, result)
     return jsonify(result), 200
 
 # ─── LOGIN / REGISTER / DASHBOARD / LOGOUT ────────────────────────────────────
@@ -139,46 +139,63 @@ def api_get_movies():
 def show_login():
     return render_template("login.html")
 
-# Handle login form (GET shows form, POST processes it)
+# Handle login form (wrap in try/except to catch errors)
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        raw_user = request.form["username"]
-        raw_pw   = request.form["password"]
-        enc_user = encode_base64(raw_user)
-        enc_pw   = encode_base64(raw_pw)
-
         try:
-            with open("users.txt") as f:
+            raw_user = request.form["username"]
+            raw_pw   = request.form["password"]
+            enc_user = encode_base64(raw_user)
+            enc_pw   = encode_base64(raw_pw)
+
+            with open("users.txt", "r") as f:
                 for line in f:
                     saved_user, saved_pw = line.strip().split(":", 1)
                     if saved_user == enc_user and saved_pw == enc_pw:
-                        # successful login → welcome (auto-redirects in template)
+                        # successful login → show welcome (will redirect to /dashboard)
                         return render_template("welcome.html", username=raw_user)
-        except FileNotFoundError:
-            pass
 
-        # failed authentication
-        return render_template("login.html", error="Invalid username or password.")
+            # no match found
+            return render_template("login.html", error="Invalid username or password.")
 
-    # GET → just show the form
+        except Exception:
+            # log the full traceback in your server logs
+            traceback.print_exc()
+            # show a generic message
+            return render_template("login.html", error="An internal error occurred. Please try again.")
+
+    # GET just shows the form
     return render_template("login.html")
 
 # Registration page & form
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    error = None
+
     if request.method == "POST":
         raw_user = request.form["username"]
         raw_pw   = request.form["password"]
         enc_user = encode_base64(raw_user)
         enc_pw   = encode_base64(raw_pw)
 
-        with open("users.txt", "a") as f:
-            f.write(f"{enc_user}:{enc_pw}\n")
+        # Check if username is already taken
+        try:
+            with open("users.txt", "r") as f:
+                for line in f:
+                    saved_user, _ = line.strip().split(":", 1)
+                    if saved_user == enc_user:
+                        error = "That username is already taken."
+                        break
+        except FileNotFoundError:
+            pass
 
-        return render_template("registered_popup.html", username=raw_user)
+        if not error:
+            with open("users.txt", "a") as f:
+                f.write(f"{enc_user}:{enc_pw}\n")
+            return render_template("registered_popup.html", username=raw_user)
 
-    return render_template("register.html")
+    return render_template("register.html", error=error)
 
 # Dashboard (your index.html)
 @app.route("/dashboard")
@@ -192,4 +209,5 @@ def logout():
 
 # ─── Run the server ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=False)
+    # enable the debugger and auto-reload
+    app.run(host="0.0.0.0", port=8080, debug=True)
