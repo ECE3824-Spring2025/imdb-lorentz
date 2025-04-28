@@ -38,6 +38,12 @@
       margin-bottom: 1rem;
     }
 
+    .error-message {
+      color: #d32f2f;
+      margin-bottom: 1rem;
+      font-weight: bold;
+    }
+
     input[type="text"], input[type="password"] {
       width: 90%;
       padding: 10px;
@@ -92,6 +98,11 @@
 
   <div class="login-box">
     <h1>Create an Account</h1>
+
+    {% if error %}
+      <div class="error-message">{{ error }}</div>
+    {% endif %}
+
     <form action="/register" method="POST">
       <input type="text" name="username" placeholder="Choose a Username" required><br>
       <input type="password" name="password" placeholder="Choose a Password" required><br>
