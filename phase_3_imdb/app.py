@@ -241,12 +241,14 @@ def login():
 
     username = request.form.get("username","")
     password = request.form.get("password","")
+
     try:
         with open("users.txt") as f:
             for line in f:
-                u,p = line.strip().split(":",1)
-                if u==username and p==password:
-                    return redirect(url_for("dashboard"))
+                u, p = line.strip().split(":",1)
+                if u == username and p == password:
+                    # ← Render your welcome.html here:
+                    return render_template("welcome.html", username=username)
     except FileNotFoundError:
         pass
 
