@@ -6,51 +6,15 @@ from flask import (
     url_for,
     jsonify
 )
-
-app = Flask(__name__)
-
-# Show login page
-@app.route('/')
-def index():
-    return render_template('login.html')
-
-# Show and process register form
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        # Save new user to text file
-        with open('users.txt', 'a') as f:
-            f.write(f"{username}:{password}\n")
-
-        # Show popup and redirect to login
-        return render_template('registered_popup.html', username=username)
-
-    return render_template('register.html')
-
-# Handle login form submission
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-
-    try:
-        with open('users.txt', 'r') as f:
-            users = f.readlines()
-            for user in users:
-                saved_username, saved_password = user.strip().split(':')
-                if username == saved_username and password == saved_password:
-                    return render_template('welcome.html', username=username)
-    except FileNotFoundError:
-        pass
-
-    # If no match found
-    return render_template('login.html', error="Invalid username or password.")
-
 import sqlalchemy #pip install sqlalchemy
 import sqlalchemy.orm
+from flask_sqlalchemy import SQLAlchemy #pip install flask_sqlalchemy
+from flask_caching import Cache #pip install flask_caching
+from flask_cors import CORS #pip install flask_cors
+import os
+import csv
+import pandas as pd #pip install flask_cors
+from tqdm import tqdm  # pip install tqdm
 
 # Patch SQLAlchemy Session.get_bind to avoid extra argument errors.
 def patched_get_bind(self, mapper=None, clause=None):
@@ -63,15 +27,6 @@ if not hasattr(sqlalchemy.orm, '__all__'):
     sqlalchemy.orm.__all__ = []
 if not hasattr(sqlalchemy.orm, 'dynamic_loader'):
     sqlalchemy.orm.dynamic_loader = lambda *args, **kwargs: None
-
-from flask import Flask, request, jsonify, render_template #pip install flask
-from flask_sqlalchemy import SQLAlchemy #pip install flask_sqlalchemy
-from flask_caching import Cache #pip install flask_caching
-from flask_cors import CORS #pip install flask_cors
-import os
-import csv
-import pandas as pd #pip install flask_cors
-from tqdm import tqdm  # pip install tqdm
 
 # --- Monkey patch: subclass SQLAlchemy to add missing attributes ---
 class PatchedSQLAlchemy(SQLAlchemy):
@@ -86,7 +41,6 @@ PatchedSQLAlchemy.Integer = sqlalchemy.Integer
 PatchedSQLAlchemy.String = sqlalchemy.String
 PatchedSQLAlchemy.Float = sqlalchemy.Float
 
-# --- Initialize the app and extensions using the patched SQLAlchemy ---
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
@@ -226,51 +180,40 @@ def api_get_movies():
     data = get_top_10_movies(genre, sort_by, min_votes_threshold, max_votes_threshold)
     return jsonify(data), 200
 
-
-# ─── Login / Landing ───────────────────────────────────
-@app.route("/", methods=["GET","POST"])
+# --- LOGIN / REGISTER / DASHBOARD ---
+@app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        user = request.form["username"]
+        pw   = request.form["password"]
         try:
             with open("users.txt") as f:
                 for line in f:
                     u, p = line.strip().split(":", 1)
-                    if u == username and p == password:
-                        # show welcome (which auto-redirects to /dashboard)
-                        return render_template("welcome.html", username=username)
+                    if u == user and p == pw:
+                        return render_template("welcome.html", username=user)
         except FileNotFoundError:
             pass
         return render_template("login.html", error="Invalid username or password.")
-    # GET → show login form
     return render_template("login.html")
 
-
-# ─── Registration ──────────────────────────────────────
-@app.route("/register", methods=["GET","POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         u = request.form["username"]
         p = request.form["password"]
-        with open("users.txt","a") as f:
+        with open("users.txt", "a") as f:
             f.write(f"{u}:{p}\n")
         return render_template("registered_popup.html", username=u)
     return render_template("register.html")
 
-
-# ─── Dashboard ─────────────────────────────────────────
 @app.route("/dashboard")
 def dashboard():
     return render_template("index.html")
 
-
-# ─── Log out ───────────────────────────────────────────
 @app.route("/logout")
 def logout():
     return redirect(url_for("login"))
-
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
