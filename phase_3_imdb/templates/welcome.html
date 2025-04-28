@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Welcome</title>
+  <meta http-equiv="refresh" content="3;url={{ url_for('dashboard') }}">
   <style>
     body {
       font-family: 'Helvetica Neue', sans-serif;
@@ -27,7 +28,7 @@
       margin-bottom: 1rem;
     }
 
-    .logout-btn {
+    .btn {
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 1rem;
@@ -36,9 +37,9 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      transition: background-color 0.2s ease;
     }
-
-    .logout-btn:hover {
+    .btn:hover {
       background-color: #ffc107;
     }
   </style>
@@ -49,8 +50,12 @@
     <h1>Welcome, {{ username }}!</h1>
     <p>You have successfully logged in.</p>
     
-    <form action="/" method="get">
-      <button class="logout-btn">Log Out</button>
+    <form action="{{ url_for('dashboard') }}" method="get" style="display:inline;">
+      <button type="submit" class="btn">Go to Dashboard</button>
+    </form>
+
+    <form action="{{ url_for('logout') }}" method="get" style="display:inline;">
+      <button type="submit" class="btn">Log Out</button>
     </form>
   </div>
 
