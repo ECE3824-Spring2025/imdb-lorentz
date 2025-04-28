@@ -157,15 +157,17 @@ def api_get_movies():
 
 # ─── LOGIN / REGISTER / DASHBOARD / LOGOUT ────────────────────────────────────
 @app.route("/", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         user = request.form["username"]
-        pw = request.form["password"]
+        pw   = request.form["password"]
         try:
             with open("users.txt") as f:
                 for line in f:
                     u, p = line.strip().split(":", 1)
                     if u == user and p == pw:
+                        # Show welcome page (auto-redirect to /dashboard in the template)
                         return render_template("welcome.html", username=user)
         except FileNotFoundError:
             pass
@@ -191,6 +193,6 @@ def dashboard():
 def logout():
     return redirect(url_for("login"))
 
-# ─── Run the app ───────────────────────────────────────────────────────────────
+# ─── Run the server ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
