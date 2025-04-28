@@ -167,18 +167,34 @@ def login():
 # Registration page & form
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    error = None
+
     if request.method == "POST":
         raw_user = request.form["username"]
         raw_pw   = request.form["password"]
         enc_user = encode_base64(raw_user)
         enc_pw   = encode_base64(raw_pw)
 
-        with open("users.txt", "a") as f:
-            f.write(f"{enc_user}:{enc_pw}\n")
+        # 1) Read existing entries
+        try:
+            with open("users.txt", "r") as f:
+                for line in f:
+                    saved_user, saved_pw = line.strip().split(":", 1)
+                    if saved_user == enc_user and saved_pw == enc_pw:
+                        error = "That username + password combo is already registered."
+                        break
+        except FileNotFoundError:
+            # no file yet ⇒ no duplicates
+            pass
 
-        return render_template("registered_popup.html", username=raw_user)
+        # 2) If no duplicate, append it
+        if not error:
+            with open("users.txt", "a") as f:
+                f.write(f"{enc_user}:{enc_pw}\n")
+            return render_template("registered_popup.html", username=raw_user)
 
-    return render_template("register.html")
+    # GET or POST-with-error
+    return render_template("register.html", error=error)
 
 # Dashboard (your index.html)
 @app.route("/dashboard")
