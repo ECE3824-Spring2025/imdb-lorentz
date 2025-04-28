@@ -221,39 +221,51 @@ def api_get_movies():
 
 # --- Home Page Route ---
 # -------------------------------------------------------------------
-
-@app.route("/")
-def index():
+# Login page
+@app.route("/", methods=["GET"])
+def show_login():
     return render_template("login.html")
 
-@app.route("/login", methods=["GET", "POST"])
+# Handle login (GET → back to login; POST → auth)
+@app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "GET":
-        return redirect(url_for("index"))
+        return redirect(url_for("show_login"))
 
-    username = request.form.get("username", "")
-    password = request.form.get("password", "")
+    username = request.form.get("username","")
+    password = request.form.get("password","")
     try:
         with open("users.txt") as f:
             for line in f:
-                u, p = line.strip().split(":", 1)
-                if u == username and p == password:
-                    return render_template("welcome.html", username=username)
+                u,p = line.strip().split(":",1)
+                if u==username and p==password:
+                    return redirect(url_for("dashboard"))
     except FileNotFoundError:
         pass
 
     return render_template("login.html", error="Invalid username or password.")
 
-@app.route("/register", methods=["GET", "POST"])
+# Registration
+@app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        with open("users.txt", "a") as f:
-            f.write(f"{username}:{password}\n")
-        return render_template("registered_popup.html", username=username)
+        u = request.form["username"]
+        p = request.form["password"]
+        with open("users.txt","a") as f:
+            f.write(f"{u}:{p}\n")
+        return render_template("registered_popup.html", username=u)
     return render_template("register.html")
 
+# Your new dashboard route
+@app.route("/dashboard", methods=["GET"])
+def dashboard():
+    # this will serve your full IMDB UI
+    return render_template("movies.html")
+
+# Optional: a log-out endpoint that just sends you back to /
+@app.route("/logout")
+def logout():
+    return redirect(url_for("show_login"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
