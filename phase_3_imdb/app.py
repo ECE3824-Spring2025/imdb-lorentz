@@ -175,19 +175,19 @@ def register():
         enc_user = encode_base64(raw_user)
         enc_pw   = encode_base64(raw_pw)
 
-        # 1) Read existing entries
+        # 1) Check if username is already taken
         try:
             with open("users.txt", "r") as f:
                 for line in f:
-                    saved_user, saved_pw = line.strip().split(":", 1)
-                    if saved_user == enc_user and saved_pw == enc_pw:
-                        error = "That username + password combo is already registered."
+                    saved_user, _ = line.strip().split(":", 1)
+                    if saved_user == enc_user:
+                        error = "That username is already taken."
                         break
         except FileNotFoundError:
             # no file yet ⇒ no duplicates
             pass
 
-        # 2) If no duplicate, append it
+        # 2) If no duplicate username, append new credentials
         if not error:
             with open("users.txt", "a") as f:
                 f.write(f"{enc_user}:{enc_pw}\n")
