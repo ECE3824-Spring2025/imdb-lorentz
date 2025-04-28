@@ -156,6 +156,11 @@ def api_get_movies():
     return jsonify(get_top_10_movies(genre, sort_by, min_votes, max_votes)), 200
 
 # ─── LOGIN / REGISTER / DASHBOARD / LOGOUT ────────────────────────────────────
+# Login page
+@app.route("/", methods=["GET"])
+def show_login():
+    return render_template("login.html")
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
