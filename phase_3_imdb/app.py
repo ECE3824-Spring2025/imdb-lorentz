@@ -89,37 +89,6 @@ def parse_votes_to_int(votes_str):
         return int(float(votes_str[:-1]) * 1_000)
     return int(votes_str) if votes_str and votes_str.isdigit() else 0
 
-# ─── Seed helper (optional) ─────────────────────────────────────────────────
-def seed_from_imdb_datasets(basics_tsv, ratings_tsv, chunk_size=10000):
-    with app.app_context():
-        total_lines = sum(1 for _ in open(basics_tsv, 'r', encoding='utf-8')) - 1
-        total_chunks = (total_lines // chunk_size) + 1
-        df_list = []
-        for chunk in tqdm(pd.read_csv(
-                basics_tsv, sep='\t', na_values='\\N',
-                low_memory=False, chunksize=chunk_size
-            ), total=total_chunks, desc="Reading title.basics.tsv"):
-            df_list.append(chunk[chunk['titleType'] == 'movie'])
-        df_basics = pd.concat(df_list, ignore_index=True)
-        df_ratings = pd.read_csv(ratings_tsv, sep='\t', na_values='\\N')
-        df_merged = pd.merge(df_basics, df_ratings, on='tconst', how='inner')
-
-        for _, row in tqdm(df_merged.iterrows(), total=len(df_merged), desc="Seeding DB"):
-            tconst = row['tconst']
-            movie = db.session.get(Movie, tconst)
-            data = {
-                'name':   row['primaryTitle'] if pd.notna(row['primaryTitle']) else "Unknown",
-                'rating': row['averageRating'] if pd.notna(row['averageRating']) else None,
-                'votes':  str(int(row['numVotes'])) if pd.notna(row['numVotes']) else None,
-                'genre':  row['genres'] if pd.notna(row['genres']) else "Unknown"
-            }
-            if movie:
-                for k, v in data.items():
-                    setattr(movie, k, v)
-            else:
-                db.session.add(Movie(id=tconst, **data))
-        db.session.commit()
-
 # ─── Top-10 API with caching ─────────────────────────────────────────────────
 @app.route("/api/movies", methods=["GET"])
 def api_get_movies():
