@@ -260,5 +260,10 @@ def register():
 def dashboard():
     return render_template("index.html")
 
+# Optional: a log-out endpoint that just sends you back to /
+@app.route("/logout")
+def logout():
+    return redirect(url_for("show_login"))
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
