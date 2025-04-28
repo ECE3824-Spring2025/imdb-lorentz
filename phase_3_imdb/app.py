@@ -256,11 +256,9 @@ def register():
         return render_template("registered_popup.html", username=u)
     return render_template("register.html")
 
-# Your new dashboard route
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
-    # this will serve your full IMDB UI
-    return render_template("movies.html")
+    return render_template("index.html")
 
 # Optional: a log-out endpoint that just sends you back to /
 @app.route("/logout")
