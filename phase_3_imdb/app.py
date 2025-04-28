@@ -1,6 +1,22 @@
 from flask import Flask, request, render_template
+import base64
 
 app = Flask(__name__)
+
+#encodes username and password to base64 and returns the encoded values
+def encode_base64(username, password):
+    username_bytes = username.encode('utf-8')
+    password_bytes = password.encode('utf-8')
+
+    username_encoded = base64.b64encode(username_bytes).decode('utf-8')
+    password_encoded = base64.b64encode(password_bytes).decode('utf-8')
+    
+    return username_encoded, password_encoded
+   
+#decodes base64 encoded string to original string
+def decode_base64(encoded_message):
+    message_bytes = base64.b64decode(encoded_message)
+    return message_bytes.decode('utf-8')
 
 # Show login page
 @app.route('/')
@@ -13,8 +29,10 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        #get encoded verison
+        username, password = encode_base64(None, username, password)
 
-        # Save new user to text file
+        # Save new user to text file 
         with open('users.txt', 'a') as f:
             f.write(f"{username}:{password}\n")
 
@@ -28,7 +46,10 @@ def register():
 def login():
     username = request.form['username']
     password = request.form['password']
+    #get encoded verison
+    username, password = encode_base64(None, username, password)
 
+    #check encoded verison against db
     try:
         with open('users.txt', 'r') as f:
             users = f.readlines()
